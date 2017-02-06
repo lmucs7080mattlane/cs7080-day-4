@@ -31,7 +31,16 @@ class UselessMachine:
 if __name__ == '__main__':
     from arduino import ArduinoInterface
     from cloud import CloudInterface
-    arduino = ArduinoInterface({'device':'/dev/ttyACM2'})
-    cloud = CloudInterface({'address':'http://192.168.0.25:8080'})
+    import sys
+
+    device = sys.argv[1]
+    url = sys.argv[2]
+
+    print('Configured to use device {}'.format(device))
+    arduino = ArduinoInterface({'device': device})
+
+    print('Configured to use server {}'.format(url))
+    cloud = CloudInterface({'address': url})
+
     UselessMachine({'loop_delay_s':1}, arduino, cloud).start()
     
