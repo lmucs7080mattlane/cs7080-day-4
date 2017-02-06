@@ -1,3 +1,4 @@
+import os
 from pyfirmata import Arduino, STRING_DATA
 from pyfirmata.util import Iterator
 
@@ -6,12 +7,18 @@ class ArduinoInterface:
         self.config = config
         self.button_status_handler = None
         
+    @staticmethod
+    def _autodiscover_device():
+        device_list = ['/dev/ttyACM{}'.format(i) for i in range(10)]
+        devices = [dev for dev in device_list if os.path.exists(dev)]
+        return devices[0]
+        
     def connect(self):
         device = None 
         try:
             device = self.config['device']
-        except:
-            device = self._autodiscover_device()
+        except KeyError:
+            device = self.__class__._autodiscover_device()
         self.board = Arduino(device, baudrate=57600,timeout=100)
         Iterator(self.board).start()
         self.board.add_cmd_handler(
@@ -26,14 +33,20 @@ class ArduinoInterface:
         self.board.send_sysex(0x02, bytes([]))
 
     def _button_status_handler(self, *string):
-        self.button_status_handler(int(chr(string[0])))
+        status = None
+        try:
+            status = int(chr(string[0]))
+        except ValueError:
+            print('Empty button status received: {}'.format(string))
+        else:
+            self.button_status_handler(status)
         
     def attach_button_status_handler(self, func):
         self.button_status_handler = func
 
 if __name__ == '__main__':
     import time
-    arduino = ArduinoInterface({'device':'/dev/ttyACM0'})
+    arduino = ArduinoInterface({})
     arduino.connect()
     
     while True:
