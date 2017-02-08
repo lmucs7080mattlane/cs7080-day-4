@@ -18,8 +18,7 @@ class CloudInterface:
         self.session = requests.post(
             self.config['address'] + '/signout',
             data=json.dumps(self.session)
-        ).json()
-        print(self.session)
+        )
         # TODO check status code?
         
     def extend_session(self):
