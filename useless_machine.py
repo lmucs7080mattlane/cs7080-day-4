@@ -1,4 +1,5 @@
 import time
+import traceback
 
 class UselessMachine:
     def __init__(self, config, arduino, cloud):
@@ -25,6 +26,7 @@ class UselessMachine:
                     print(alert)
                 self.arduino.request_button_status()
         except:
+            print(traceback.format_exc())
             self.cloud.disconnect()
             raise
 
