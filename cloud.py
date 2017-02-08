@@ -7,15 +7,18 @@ class CloudInterface:
      
     def connect(self):
         data = '{}'
-        self.session = requests.post(
+        res = requests.post(
             self.config['address'] + '/login',
             data=data
-        ).json()
+        )
+        if res.status_code != 200:
+            raise Exception('Failed to login - {}'.format(res.status_code))
+
+        self.session = res.json()
         print(self.session)
-        # TODO check status code?
      
     def disconnect(self):
-        self.session = requests.post(
+        requests.post(
             self.config['address'] + '/signout',
             data=json.dumps(self.session)
         )
@@ -52,8 +55,11 @@ class CloudInterface:
         res = requests.post(
             self.config['address'] + '/action',
             data=json.dumps(data)
-        ).json()
-        return res['response']['alerted']
+        )
+        if res.status_code != 200:
+            raise Exception('Failed to check for alert, {}'.format(res.status_code))
+        body = res.json()
+        return body['response']['alerted']
         
     def send_button_pressed(self):
         action = {
