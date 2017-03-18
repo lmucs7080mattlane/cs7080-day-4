@@ -69,7 +69,7 @@ class ArduinoInterface:
                 # Command code is SENSOR_DATA (0x01).
                 # Call the attached sensor data handler method
                 # with the sensor data (all data after the command code).
-        	self.sensor_data_handler(string[1:])
+                self.sensor_data_handler(string[1:])
         
     def attach_sensor_data_handler(self, func):
         # Take the parameter function and call it whenever we receive sensor
