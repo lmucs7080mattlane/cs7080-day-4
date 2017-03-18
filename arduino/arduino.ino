@@ -10,10 +10,8 @@ const int TONE_LOOP_NOTES[TONE_LOOP_NUM_NOTES] = {NOTE_C5, NOTE_D5, NOTE_E5, NOT
 
 // Firmata commands
 const byte FIRMATA_ALERT = 0x01;
-const byte FIRMATA_CHECK_SENSOR_STATUS = 0x02;
-
-const int BUTTON_PRESS_TONE_DURATION_MS = 2000;
-
+const byte FIRMATA_CHECK_BUTTON_STRING = 0x02;
+const byte FIRMATA_CHECK_BUTTON_INTEGER = 0x03;
 
 int alert = 0;
 
@@ -25,12 +23,10 @@ void firmata_init(){
 
 void turn_led_on(){
     digitalWrite(LED_PIN, HIGH);
-    led_state = HIGH;
 }
 
 void turn_led_off(){
     digitalWrite(LED_PIN, LOW);
-    led_state = LOW;
 }
 
 void play_tone(int note, int milliseconds){
@@ -60,23 +56,29 @@ void firmata_sysex_callback(byte command, byte argc, byte *argv)
                 alert = 0;
                 turn_led_off();
             }
-        break;
-        case FIRMATA_CHECK_SENSOR_STATUS:
+            break;
+        case FIRMATA_CHECK_BUTTON_STRING:
             if (digitalRead(BUTTON_PIN) == HIGH) {
-                Firmata.sendString("Button is pressed");
+                Firmata.sendString("1Button is pressed");
             }
             else {
-                Firmata.sendString("Button is not pressed");
+                Firmata.sendString("1Button is not pressed");
             }
-        break;
+            break;
+        case FIRMATA_CHECK_BUTTON_INTEGER:
+            String msgPrefix = "2";
+            String msg = msgPrefix + digitalRead(BUTTON_PIN);
+            int str_len = msg.length() + 1;
+            char char_array[str_len];
+            msg.toCharArray(char_array, str_len);
+            Firmata.sendString(char_array);
+            break;
     }
 }
 
 void setup(){
     pinMode(LED_PIN, OUTPUT);
     pinMode(BUTTON_PIN, INPUT_PULLUP);
-    display_init();
-    test_run();
     firmata_init();
 }
 
@@ -87,4 +89,5 @@ void loop(){
     if(alert){
         occasionally_beep(2, 20);
     }
+    delay(200);
 }

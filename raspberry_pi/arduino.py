@@ -53,10 +53,15 @@ class ArduinoInterface:
         # parameter
         self.board.send_sysex(0x01, bytes([alert]))
 
-    def request_sensor_status(self):
-        # Send the REQUEST_STATUS command (0x02) to ask the Raspberry Pi
+    def request_button_string_status(self):
+        # Send the REQUEST_BUTTON_STRING command (0x02) to ask the Raspberry Pi
         # to send its current sensor data.
         self.board.send_sysex(0x02, bytes([]))
+
+    def request_button_integer_status(self):
+        # Send the REQUEST_BUTTON_INTEGER command (0x03) to ask the Raspberry Pi
+        # to send its current sensor data.
+        self.board.send_sysex(0x03, bytes([]))
 
     def _handle_string_data(self, *string):
         command = None
@@ -65,30 +70,44 @@ class ArduinoInterface:
         except ValueError:
             print('Empty command received: {}'.format(string))
         else:
-            if command == 0x01:
-                # Command code is SENSOR_DATA (0x01).
+            if command == 1:
+                # Command code is BUTTON_STRING (0x01).
                 # Call the attached sensor data handler method
                 # with the sensor data (all data after the command code).
-                self.sensor_data_handler(string[1:])
+                self.button_string_handler(bytes(string[2::2]).decode('ascii'))
+            if command == 2:
+                # Command code is BUTTON_INTEGER (0x02).
+                # Call the attached sensor data handler method
+                # with the sensor data (all data after the command code).
+                self.button_integer_handler(int(bytes(string[2::2]).decode('ascii')))
         
-    def attach_sensor_data_handler(self, func):
-        # Take the parameter function and call it whenever we receive sensor
-        # data.
-        self.sensor_data_handler = func
+    def attach_button_string_handler(self, func):
+        # Take the parameter function and call it whenever we receive button
+        # string data.
+        self.button_string_handler = func
+        
+    def attach_button_integer_handler(self, func):
+        # Take the parameter function and call it whenever we receive button
+        # integer data.
+        self.button_integer_handler = func
 
 if __name__ == '__main__':
     import time
     arduino = ArduinoInterface({})
     arduino.connect()
 
-    def handle_sensor_data(data):
-        print(data)
-    arduino.attach_sensor_data_handler(handle_sensor_data)
+    def handle_button_string_data(data):
+        print("Button String Data: '{}'".format(data))
+    def handle_button_integer_data(data):
+        print("Button Integer Data: {}".format(data))
+    arduino.attach_button_string_handler(handle_button_string_data)
+    arduino.attach_button_integer_handler(handle_button_integer_data)
     
     while True:
         arduino.send_alert_update(alert=True)
-        time.sleep(5)
+        time.sleep(2)
         arduino.send_alert_update(alert=False)
-        time.sleep(5)
-        arduino.request_sensor_status()
-        time.sleep(5)
+        time.sleep(2)
+        arduino.request_button_string_status()
+        arduino.request_button_integer_status()
+        time.sleep(2)
