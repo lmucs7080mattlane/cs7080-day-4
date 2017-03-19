@@ -133,7 +133,7 @@ void firmata_sysex_callback(byte command, byte argc, byte *argv)
             // for the arduino to send a bit of text or
             // 'string' to the raspberry pi describing
             // the status of our button.
-            if (digitalRead(BUTTON_PIN) == HIGH) {
+            if (digitalRead(BUTTON_PIN) == LOW) {
                 firmata_send_string(
                     FIRMATA_RESPONSE_BUTTON_STRING,
                     String("Button is pressed")
