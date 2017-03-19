@@ -66,7 +66,7 @@ class ArduinoInterface:
     def _handle_string_data(self, *string):
         command = None
         try:
-            command = int(chr(string[0]))
+            command = string[0]
         except ValueError:
             print('Empty command received: {}'.format(string))
         else:

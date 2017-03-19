@@ -1,54 +1,111 @@
 #include <Firmata.h>
 #include <pitches.h>
 
+// The pin numbers for the digital pins on the arduino that we are using
+// to control/read from:
+// The LED
 const int LED_PIN = 13;
+// The Button
 const int BUTTON_PIN = 9;
+// The Buzzer
 const int BUZZER_PIN = 8;
 
+// Array of notes to play with the buzzer. The constants come
+// from the 'pitches.h' file
 const int TONE_LOOP_NUM_NOTES = 5;
 const int TONE_LOOP_NOTES[TONE_LOOP_NUM_NOTES] = {NOTE_C5, NOTE_D5, NOTE_E5, NOTE_F5, NOTE_G5};
 
-// Firmata commands
+// Firmata commands we can receive from the raspberry pi
+// These need to be consistent with the ones in the
+// raspberry pi code.
 const byte FIRMATA_ALERT = 0x01;
 const byte FIRMATA_CHECK_BUTTON_STRING = 0x02;
 const byte FIRMATA_CHECK_BUTTON_INTEGER = 0x03;
 
+// Firmata response commands we can send to the raspberry pi
+// These need to be consistent with the ones in the
+// raspberry pi code.
+const byte FIRMATA_RESPONSE_BUTTON_STRING = 0x01;
+const byte FIRMATA_RESPONSE_BUTTON_INTEGER = 0x02;
+
+// When set to 1, sound the buzzer
 int alert = 0;
 
+// Initialise the firmata library so that we can talk to 
+// the raspberry pi
 void firmata_init(){
-    Firmata.setFirmwareVersion(1, 0);
+    // Register the function 'firmata_sysex_callback' with
+    // the firmata library such that this function is called
+    // whenever we receive a request from the raspberry pi
     Firmata.attach(START_SYSEX, firmata_sysex_callback);
+    // Start listening for a raspberry pi connection
     Firmata.begin(57600);
 }
 
+// This function is here to make it easier to send 
+// response strings back to the raspberry pi
+void firmata_send_string(byte command, String message){
+    // Send a message 'message' with command 'command'
+    // to the raspberry pi
+    String msg = String(char(command)) + message;
+    int str_len = msg.length() + 1;
+    char char_array[str_len];
+    msg.toCharArray(char_array, str_len);
+    Firmata.sendString(char_array);
+}
+
+// Turn LED light on
 void turn_led_on(){
     digitalWrite(LED_PIN, HIGH);
 }
 
+// Turn LED light off
 void turn_led_off(){
     digitalWrite(LED_PIN, LOW);
 }
 
+// Play a specific tone on the buzzer
+// for a certain amount of milliseconds
 void play_tone(int note, int milliseconds){
     tone(BUZZER_PIN, note, milliseconds);
 }
 
+// Function that when called repeatedly will
+// play the notes in the TONE_LOOP_NOTES array
 int current_beep_count = 0;
 int current_beep_tone = 0;
 void occasionally_beep(int beep_modulo, int beep_duration){
     if(current_beep_count++ % beep_modulo == 0){
-        play_tone(TONE_LOOP_NOTES[current_beep_tone++], beep_duration);
+        // Only play a tone once every 'beep_modulo' calls
+        // to this function
+        play_tone(TONE_LOOP_NOTES[current_beep_tone], beep_duration);
+        // Move the beep tone to the next in the array
+        // and loop back to the first note in the array
+        // if we have reached the end
+        current_beep_tone = ++current_beep_tone % TONE_LOOP_NUM_NOTES;
     }
     current_beep_count = current_beep_count % beep_modulo;
-    current_beep_tone = current_beep_tone % TONE_LOOP_NUM_NOTES;
 }
 
+// This is the function that handles messages from the raspberry pi
+// (through the 'firmata' library over the USB link)
 void firmata_sysex_callback(byte command, byte argc, byte *argv)
 {  
+    // Perform different actions depending on which command
+    // we received from the raspberry pi
     switch (command) {
+        byte alert_parameter;
         case FIRMATA_ALERT:
-            // First and only byte should be the alert Boolean parameter
-            if (argv[0]) {
+            // We received an ALERT command
+            // We know from the raspberry pi code that the
+            // the alert command is sent with single parameter
+            // which describes whether we the arduino should
+            // be alerted or not. This parameter is one byte long.
+            
+            alert_parameter = argv[0]; // Get the first (and only)
+            // byte from the data we received from the raspberry pi
+            
+            if (alert_parameter) {
                 alert = 1;
                 turn_led_on();
             }
@@ -57,37 +114,64 @@ void firmata_sysex_callback(byte command, byte argc, byte *argv)
                 turn_led_off();
             }
             break;
+
         case FIRMATA_CHECK_BUTTON_STRING:
+            // We received a 'CHECK_BUTTON_STRING' command.
+            // This is a request from the raspberry pi
+            // for the arduino to send a bit of text or
+            // 'string' to the raspberry pi describing
+            // the status of our button.
             if (digitalRead(BUTTON_PIN) == HIGH) {
-                Firmata.sendString("1Button is pressed");
+                firmata_send_string(
+                    FIRMATA_RESPONSE_BUTTON_STRING,
+                    String("Button is pressed")
+                );
             }
             else {
-                Firmata.sendString("1Button is not pressed");
+                firmata_send_string(
+                    FIRMATA_RESPONSE_BUTTON_STRING,
+                    String("Button is not pressed")
+                );
             }
             break;
+
         case FIRMATA_CHECK_BUTTON_INTEGER:
-            String msgPrefix = "2";
-            String msg = msgPrefix + digitalRead(BUTTON_PIN);
-            int str_len = msg.length() + 1;
-            char char_array[str_len];
-            msg.toCharArray(char_array, str_len);
-            Firmata.sendString(char_array);
+            // We received a 'CHECK_BUTTON_INTEGER' command.
+            // This is a request from the raspberry pi
+            // for the arduino to send an integer to the
+            // raspberry pi describing the status of our button.
+            firmata_send_string(
+                FIRMATA_RESPONSE_BUTTON_INTEGER,
+                String(digitalRead(BUTTON_PIN))
+            );
             break;
     }
 }
 
+// Setup function that is called when the arduino first runs this code
 void setup(){
+    // set the LED and button pins to their appropriate input/output modes 
     pinMode(LED_PIN, OUTPUT);
     pinMode(BUTTON_PIN, INPUT_PULLUP);
+    // Initialise the firmata connection the raspberry pi
     firmata_init();
 }
 
+// Loop function that is called over after the arduino has run the
+// setup function
 void loop(){
+    // First check if we have received any messages from the raspberry pi
+    // that we need to process
     while(Firmata.available()) {
         Firmata.processInput();
     }
+    // Then do everything else
+    // In this case, if the 'alert' integer is set to a non-zero value
+    // beep the buzzer.
     if(alert){
         occasionally_beep(2, 20);
     }
+    // Sleep for a bit as we don't want to rush through the buzzer's
+    // set of notes
     delay(200);
 }
