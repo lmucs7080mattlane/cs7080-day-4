@@ -32,6 +32,7 @@ const byte FIRMATA_REQUEST_BUTTON_STRING = 2;
 const byte FIRMATA_REQUEST_BUTTON_INTEGER = 3;
 // TODO challenge define a new command constant called
 // 'FIRMATA_REQUEST_PLAY_NOTE' with value 4
+const byte FIRMATA_REQUEST_PLAY_NOTE = 4;
 
 // Firmata response commands we can send to the raspberry pi
 // These need to be consistent with the ones in the
@@ -159,7 +160,7 @@ void firmata_sysex_callback(byte command, byte argc, byte *argv)
 
         // TODO challenge:
         // Handle a new command called 'FIRMATA_REQUEST_PLAY_NOTE'
-        //case FIRMATA_REQUEST_PLAY_NOTE:
+        case FIRMATA_REQUEST_PLAY_NOTE:
             // We received a 'REQUEST_PLAY_NOTE' command.
             // This is a request from the raspberry pi
             // for the arduino to play a tone on the buzzer
@@ -173,7 +174,9 @@ void firmata_sysex_callback(byte command, byte argc, byte *argv)
             // We want to call the play_tone function with the new tone
             // and millisecond duration
             
-            // break;
+            play_tone(TONE_LOOP_NOTES[argv[0]], argv[1] * 100);
+            
+            break;
     }
 }
 
@@ -186,7 +189,7 @@ void setup(){
     firmata_init();
 }
 
-// Loop function that is called over after the arduino has run the
+// Loop function that is called over and over after the arduino has run the
 // setup function
 void loop(){
     // First check if we have received any messages from the raspberry pi

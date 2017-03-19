@@ -16,6 +16,7 @@ FIRMATA_REQUEST_BUTTON_STRING = 2
 FIRMATA_REQUEST_BUTTON_INTEGER = 3
 # TODO Challenge create a new 'FIRMATA_REQUEST_PLAY_NOTE' command
 # with value 4
+FIRMATA_REQUEST_PLAY_NOTE = 4
 
 # Firmata response commands we can receive from the Arduino
 # These need to be consistent with the ones in the
@@ -58,7 +59,7 @@ class ArduinoInterface:
         self.board = Arduino(device, baudrate=57600,timeout=100)
         Iterator(self.board).start()
 
-        # Set this classes '_handle_string_data' method
+        # Set this classes' '_handle_string_data' method
         # as the function that handles STRING_DATA messages
         # from the raspberry pi
         self.board.add_cmd_handler(
@@ -96,6 +97,11 @@ class ArduinoInterface:
         # array of 8 notes from C5 to C6
         # The second argument is the duration of the note in 10ths of
         # seconds
+        
+        self.board.send_sysex(
+            FIRMATA_REQUEST_PLAY_NOTE,
+            bytes([ tone_index, duration_ms_tenths ])
+        )
 
     def _handle_string_data(self, *string):
         command = None
@@ -152,5 +158,5 @@ if __name__ == '__main__':
         time.sleep(2)
         arduino.request_button_string_status()
         arduino.request_button_integer_status()
-        arduino.request_play_note(7, 40)
+        arduino.request_play_note(1, 20)
         time.sleep(5)
