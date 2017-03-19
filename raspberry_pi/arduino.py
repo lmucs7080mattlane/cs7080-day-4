@@ -11,15 +11,17 @@ from pyfirmata.util import Iterator
 # Firmata commands we can send to the Arduino
 # These need to be consistent with the ones in the
 # Arduino code.
-FIRMATA_ALERT = 0x01
-FIRMATA_REQUEST_BUTTON_STRING = 0x02
-FIRMATA_REQUEST_BUTTON_INTEGER = 0x03
+FIRMATA_REQUEST_ALERT = 1
+FIRMATA_REQUEST_BUTTON_STRING = 2
+FIRMATA_REQUEST_BUTTON_INTEGER = 3
+# TODO Challenge create a new 'FIRMATA_REQUEST_PLAY_NOTE' command
+# with value 4
 
 # Firmata response commands we can receive from the Arduino
 # These need to be consistent with the ones in the
 # Arduino code.
-FIRMATA_RESPONSE_BUTTON_STRING = 0x01
-FIRMATA_RESPONSE_BUTTON_INTEGER = 0x02
+FIRMATA_RESPONSE_BUTTON_STRING = 1
+FIRMATA_RESPONSE_BUTTON_INTEGER = 2
 
 
 # This class will act as our interface to the Arduino from the Raspberry PI
@@ -65,23 +67,35 @@ class ArduinoInterface:
         )
 
     def send_alert_update(self, alert=True):
-        # Send the ALERT command (0x01) to the Arduino 
+        # Send the REQUEST_ALERT command (1) to the Arduino 
         # with a single byte 'alert' as a parameter
-        self.board.send_sysex(FIRMATA_ALERT, bytes([alert]))
+        self.board.send_sysex(FIRMATA_REQUEST_ALERT, bytes([alert]))
 
     def request_button_string_status(self):
-        # Send the REQUEST_BUTTON_STRING command (0x02) to ask the Arduino
+        # Send the REQUEST_BUTTON_STRING command (2) to ask the Arduino
         # to send its current sensor data as a string.
         # We send an empty array of bytes as we have no parameters to
         # send along with the command.
         self.board.send_sysex(FIRMATA_REQUEST_BUTTON_STRING, bytes([]))
 
     def request_button_integer_status(self):
-        # Send the REQUEST_BUTTON_INTEGER command (0x03) to ask the Arduino
+        # Send the REQUEST_BUTTON_INTEGER command (3) to ask the Arduino
         # to send its current sensor data as an integer.
         # We send an empty array of bytes as we have no parameters to
         # send along with the command.
         self.board.send_sysex(FIRMATA_REQUEST_BUTTON_INTEGER, bytes([]))
+
+    def request_play_note(self, tone_index, duration_ms_tenths):
+        # Send the REQUEST_PLAY_NOTE command (4) to ask the Arduino
+        # to play a note in the set of notes between C5 and C6
+
+        # TODO Challenge:
+        # Send a FIRMATA_REQUEST_PLAY_NOTE command with two single-byte
+        # arguments.
+        # The first argument is an index from 0 to 7 into the
+        # array of 8 notes from C5 to C6
+        # The second argument is the duration of the note in 10ths of
+        # seconds
 
     def _handle_string_data(self, *string):
         command = None
@@ -91,12 +105,12 @@ class ArduinoInterface:
             print('Empty command received: {}'.format(string))
         else:
             if command == FIRMATA_RESPONSE_BUTTON_STRING:
-                # Command code is BUTTON_STRING (0x01).
+                # Command code is BUTTON_STRING (1).
                 # Call the attached sensor data handler method
                 # with the sensor data (all data after the command code).
                 self.button_string_handler(bytes(string[2::2]).decode('ascii'))
             if command == FIRMATA_RESPONSE_BUTTON_INTEGER:
-                # Command code is BUTTON_INTEGER (0x02).
+                # Command code is BUTTON_INTEGER (2).
                 # Call the attached sensor data handler method
                 # with the sensor data (all data after the command code).
                 self.button_integer_handler(int(bytes(string[2::2]).decode('ascii')))
@@ -138,4 +152,5 @@ if __name__ == '__main__':
         time.sleep(2)
         arduino.request_button_string_status()
         arduino.request_button_integer_status()
-        time.sleep(2)
+        arduino.request_play_note(7, 40)
+        time.sleep(5)

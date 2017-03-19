@@ -12,21 +12,32 @@ const int BUZZER_PIN = 8;
 
 // Array of notes to play with the buzzer. The constants come
 // from the 'pitches.h' file
-const int TONE_LOOP_NUM_NOTES = 5;
-const int TONE_LOOP_NOTES[TONE_LOOP_NUM_NOTES] = {NOTE_C5, NOTE_D5, NOTE_E5, NOTE_F5, NOTE_G5};
+const int TONE_LOOP_NUM_NOTES = 8;
+const int TONE_LOOP_NOTES[TONE_LOOP_NUM_NOTES] = {
+    NOTE_C5,
+    NOTE_D5,
+    NOTE_E5,
+    NOTE_F5,
+    NOTE_G5,
+    NOTE_A5,
+    NOTE_B5,
+    NOTE_C6
+};
 
 // Firmata commands we can receive from the raspberry pi
 // These need to be consistent with the ones in the
 // raspberry pi code.
-const byte FIRMATA_ALERT = 0x01;
-const byte FIRMATA_REQUEST_BUTTON_STRING = 0x02;
-const byte FIRMATA_REQUEST_BUTTON_INTEGER = 0x03;
+const byte FIRMATA_REQUEST_ALERT = 1;
+const byte FIRMATA_REQUEST_BUTTON_STRING = 2;
+const byte FIRMATA_REQUEST_BUTTON_INTEGER = 3;
+// TODO challenge define a new command constant called
+// 'FIRMATA_REQUEST_PLAY_NOTE' with value 4
 
 // Firmata response commands we can send to the raspberry pi
 // These need to be consistent with the ones in the
 // raspberry pi code.
-const byte FIRMATA_RESPONSE_BUTTON_STRING = 0x01;
-const byte FIRMATA_RESPONSE_BUTTON_INTEGER = 0x02;
+const byte FIRMATA_RESPONSE_BUTTON_STRING = 1;
+const byte FIRMATA_RESPONSE_BUTTON_INTEGER = 2;
 
 // When set to 1, sound the buzzer
 int alert = 0;
@@ -95,8 +106,8 @@ void firmata_sysex_callback(byte command, byte argc, byte *argv)
     // we received from the raspberry pi
     switch (command) {
         byte alert_parameter;
-        case FIRMATA_ALERT:
-            // We received an ALERT command
+        case FIRMATA_REQUEST_ALERT:
+            // We received an REQUEST_ALERT command
             // We know from the raspberry pi code that the
             // the alert command is sent with single parameter
             // which describes whether we the arduino should
@@ -145,6 +156,24 @@ void firmata_sysex_callback(byte command, byte argc, byte *argv)
                 String(digitalRead(BUTTON_PIN))
             );
             break;
+
+        // TODO challenge:
+        // Handle a new command called 'FIRMATA_REQUEST_PLAY_NOTE'
+        //case FIRMATA_REQUEST_PLAY_NOTE:
+            // We received a 'REQUEST_PLAY_NOTE' command.
+            // This is a request from the raspberry pi
+            // for the arduino to play a tone on the buzzer
+
+            // TODO challenge:
+            // We expect two parameters, the first being an integer
+            // index into our array of notes (called TONE_LOOP_NOTES),
+            // the second being the duration for the note in tenths
+            // of seconds,
+            // These arguments come from the argv array.
+            // We want to call the play_tone function with the new tone
+            // and millisecond duration
+            
+            // break;
     }
 }
 
