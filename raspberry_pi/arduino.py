@@ -1,4 +1,5 @@
 import os
+import time
 
 # For documentation on pyfirmata and the firmata protocol, go to 
 # https://media.readthedocs.org/pdf/pyfirmata/latest/pyfirmata.pdf
@@ -7,6 +8,21 @@ import os
 from pyfirmata import Arduino, STRING_DATA
 from pyfirmata.util import Iterator
 
+# Firmata commands we can send to the Arduino
+# These need to be consistent with the ones in the
+# Arduino code.
+FIRMATA_ALERT = 0x01
+FIRMATA_REQUEST_BUTTON_STRING = 0x02
+FIRMATA_REQUEST_BUTTON_INTEGER = 0x03
+
+# Firmata response commands we can receive from the Arduino
+# These need to be consistent with the ones in the
+# Arduino code.
+FIRMATA_RESPONSE_BUTTON_STRING = 0x01
+FIRMATA_RESPONSE_BUTTON_INTEGER = 0x02
+
+
+# This class will act as our interface to the Arduino from the Raspberry PI
 class ArduinoInterface:
     def __init__(self, config):
         self.config = config
@@ -49,19 +65,23 @@ class ArduinoInterface:
         )
 
     def send_alert_update(self, alert=True):
-        # Send the ALERT command (0x01) with a single byte 'alert' as a
-        # parameter
-        self.board.send_sysex(0x01, bytes([alert]))
+        # Send the ALERT command (0x01) to the Arduino 
+        # with a single byte 'alert' as a parameter
+        self.board.send_sysex(FIRMATA_ALERT, bytes([alert]))
 
     def request_button_string_status(self):
-        # Send the REQUEST_BUTTON_STRING command (0x02) to ask the Raspberry Pi
-        # to send its current sensor data.
-        self.board.send_sysex(0x02, bytes([]))
+        # Send the REQUEST_BUTTON_STRING command (0x02) to ask the Arduino
+        # to send its current sensor data as a string.
+        # We send an empty array of bytes as we have no parameters to
+        # send along with the command.
+        self.board.send_sysex(FIRMATA_REQUEST_BUTTON_STRING, bytes([]))
 
     def request_button_integer_status(self):
-        # Send the REQUEST_BUTTON_INTEGER command (0x03) to ask the Raspberry Pi
-        # to send its current sensor data.
-        self.board.send_sysex(0x03, bytes([]))
+        # Send the REQUEST_BUTTON_INTEGER command (0x03) to ask the Arduino
+        # to send its current sensor data as an integer.
+        # We send an empty array of bytes as we have no parameters to
+        # send along with the command.
+        self.board.send_sysex(FIRMATA_REQUEST_BUTTON_INTEGER, bytes([]))
 
     def _handle_string_data(self, *string):
         command = None
@@ -70,12 +90,12 @@ class ArduinoInterface:
         except ValueError:
             print('Empty command received: {}'.format(string))
         else:
-            if command == 1:
+            if command == FIRMATA_RESPONSE_BUTTON_STRING:
                 # Command code is BUTTON_STRING (0x01).
                 # Call the attached sensor data handler method
                 # with the sensor data (all data after the command code).
                 self.button_string_handler(bytes(string[2::2]).decode('ascii'))
-            if command == 2:
+            if command == FIRMATA_RESPONSE_BUTTON_INTEGER:
                 # Command code is BUTTON_INTEGER (0x02).
                 # Call the attached sensor data handler method
                 # with the sensor data (all data after the command code).
@@ -91,11 +111,19 @@ class ArduinoInterface:
         # integer data.
         self.button_integer_handler = func
 
+
+# Run the following code 'IF and ONLY IF' this file is directly being run by the
+# Python interpreter i.e. with 'python3 arduino.py' rather than being included
+# as a module in another python file.
 if __name__ == '__main__':
-    import time
+    # Create an instance of the ArduinoInterface class.
+    # Pass in an empty configuration dictionary as we want the
+    # ArduinoInterface object to discover for itself the attached Arduino
     arduino = ArduinoInterface({})
     arduino.connect()
 
+    # Attach some simple functions to receive the data incoming from the Arduino
+    # and then print it out
     def handle_button_string_data(data):
         print("Button String Data: '{}'".format(data))
     def handle_button_integer_data(data):

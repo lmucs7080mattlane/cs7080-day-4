@@ -19,8 +19,8 @@ const int TONE_LOOP_NOTES[TONE_LOOP_NUM_NOTES] = {NOTE_C5, NOTE_D5, NOTE_E5, NOT
 // These need to be consistent with the ones in the
 // raspberry pi code.
 const byte FIRMATA_ALERT = 0x01;
-const byte FIRMATA_CHECK_BUTTON_STRING = 0x02;
-const byte FIRMATA_CHECK_BUTTON_INTEGER = 0x03;
+const byte FIRMATA_REQUEST_BUTTON_STRING = 0x02;
+const byte FIRMATA_REQUEST_BUTTON_INTEGER = 0x03;
 
 // Firmata response commands we can send to the raspberry pi
 // These need to be consistent with the ones in the
@@ -115,8 +115,8 @@ void firmata_sysex_callback(byte command, byte argc, byte *argv)
             }
             break;
 
-        case FIRMATA_CHECK_BUTTON_STRING:
-            // We received a 'CHECK_BUTTON_STRING' command.
+        case FIRMATA_REQUEST_BUTTON_STRING:
+            // We received a 'REQUEST_BUTTON_STRING' command.
             // This is a request from the raspberry pi
             // for the arduino to send a bit of text or
             // 'string' to the raspberry pi describing
@@ -135,8 +135,8 @@ void firmata_sysex_callback(byte command, byte argc, byte *argv)
             }
             break;
 
-        case FIRMATA_CHECK_BUTTON_INTEGER:
-            // We received a 'CHECK_BUTTON_INTEGER' command.
+        case FIRMATA_REQUEST_BUTTON_INTEGER:
+            // We received a 'REQUEST_BUTTON_INTEGER' command.
             // This is a request from the raspberry pi
             // for the arduino to send an integer to the
             // raspberry pi describing the status of our button.
